@@ -1,0 +1,11 @@
+Model Information:
+* title:	Stairs
+* source:	https://sketchfab.com/3d-models/stairs-28584e2acd7d477f80b34b3f1e76f5ea
+* author:	Spark (https://sketchfab.com/muammar.yacoob)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Stairs" (https://sketchfab.com/3d-models/stairs-28584e2acd7d477f80b34b3f1e76f5ea) by Spark (https://sketchfab.com/muammar.yacoob) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

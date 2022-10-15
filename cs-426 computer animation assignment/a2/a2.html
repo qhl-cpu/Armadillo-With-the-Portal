@@ -1,0 +1,308 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>CPSC 426 Assignment 2 Jan 2022</title>
+    <style>
+      body { margin: 0; } canvas {width: 100%;
+      height: 100% }
+    </style>
+  </head>
+  <body>
+    <div id="canvas"></div>
+
+<!---- Custom shader definitions;  not used in the default template code ---->
+
+<script id="customVertexShader" type="x-shader/x-vertex">
+varying vec3 varyingNormal;
+void main()
+{
+        varyingNormal = normal;
+	vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+	gl_Position = projectionMatrix * mvPosition;
+}
+</script>
+
+<script id="customFragmentShader" type="x-shader/x-fragment">
+uniform sampler2D floorTexture;
+varying vec3 varyingNormal;
+void main( void ) {
+
+    // Set final rendered color according to the surface normal
+  vec3 N = normalize(varyingNormal);
+// vec3 N = vec3(1.0,0.0,0.0);
+  gl_FragColor = vec4(N.x,N.y,N.z, 1.0);
+}
+</script>
+
+ <script id="portalVertexShader" type="x-shader/x-vertex">
+  uniform vec3 spherePosition;
+  
+  varying vec3 interpolatedNormal;
+  varying vec3 lightDirection;
+  varying vec3 viewPosition;
+  varying float fresnel;
+  
+  void main() {
+      viewPosition = normalize(vec3(viewMatrix * modelMatrix * vec4(position, 1.0)));
+      vec4 viewPosTemp = viewMatrix * modelMatrix * vec4(position, 1.0);
+      
+      lightDirection = normalize(vec3(viewMatrix * vec4(spherePosition, 1.0) - viewPosTemp));
+  
+      interpolatedNormal = normalize(normalMatrix * normal);
+      vec3 norm = vec3(viewMatrix * modelMatrix * vec4(normal,0.0));
+      interpolatedNormal = normalize(vec3(norm));
+  
+      fresnel = dot(interpolatedNormal,viewPosition);
+  
+      gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
+  }
+  
+</script>
+
+  <script id="portalFragmentShader" type="x-shader/x-fragment">
+    uniform vec3 toonColor;
+uniform vec3 toonColor2;
+uniform vec3 outlineColor;
+
+varying vec3 interpolatedNormal;
+varying vec3 lightDirection;
+varying vec3 viewPosition;
+varying float fresnel;
+
+void main() {
+    float lightIntensity = 2.0 * dot (interpolatedNormal,lightDirection);
+    lightIntensity = ceil(lightIntensity)/2.0;
+
+    vec3 combinedColor = lightIntensity * toonColor + (1.0-lightIntensity)* toonColor2;
+	
+    if (fresnel <= 0.45 && fresnel >= -0.5) {
+        gl_FragColor = vec4(outlineColor,1.0);
+        combinedColor = vec3(0.0,0.0,0.0);
+    }
+
+    gl_FragColor += vec4(combinedColor, 1.0); // REPLACE ME
+	
+}
+    </script> 
+    <script id="energySphereVertexShader" type="x-shader/x-vertex">
+      uniform vec3 spherePosition;
+varying vec3 interpolatedNormal;
+varying vec3 lightDirection;
+varying vec3 viewPosition ;
+
+void main() {
+    vec4 viewPositionTemp =viewMatrix *  modelMatrix * vec4(position, 1.0);
+    viewPosition = normalize(vec3(viewPositionTemp));
+
+	vec4 sum = viewMatrix * vec4(spherePosition,1.0) -viewMatrix * modelMatrix * vec4(position, 1.0);
+	lightDirection = normalize(vec3(sum));
+
+    vec4 norm = viewMatrix * modelMatrix * vec4(normal,0.0);
+    interpolatedNormal = normalize(vec3(norm));
+
+    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
+}
+      
+    </script>
+    
+      <script id="energySphereFragmentShader" type="x-shader/x-fragment">
+        // HINT: Don't forget to define the uniforms here after you pass them in in A3.js
+uniform vec3 ambientColor;
+uniform vec3 diffuseColor;
+uniform vec3 specularColor;
+uniform vec3 lightColor;
+
+uniform float kSpecular;
+uniform float kAmbient;
+uniform float kDiffuse;
+uniform float shininess;
+
+varying vec3 interpolatedNormal;
+varying vec3 lightDirection;
+varying vec3 viewPosition;
+
+void main() {
+    float diffuse =dot(interpolatedNormal, lightDirection);
+
+    vec3 bounceVec =  -1.0* lightDirection + 2.0*(diffuse) * interpolatedNormal;
+    bounceVec = normalize(bounceVec);
+    vec3 viewPosition2 = normalize(vec3(0.0,0.0,0.0) -viewPosition);
+
+    float sum = clamp(dot(bounceVec,viewPosition2),0.0,1.0);
+    float specular =  kSpecular * pow(max(0.0, sum), shininess);
+
+    diffuse = diffuse * kDiffuse;
+
+    vec3 intensity = kAmbient * ambientColor + diffuse * diffuseColor + specular * specularColor ;
+
+    gl_FragColor = vec4(intensity, 1.0);
+}
+
+        </script> 
+
+      </script> 
+      <script id="blinphongVertexShader" type="x-shader/x-vertex">
+        uniform vec3 spherePosition;
+        
+        varying vec3 interpolatedNormal;
+        varying vec3 lightDirection;
+        varying vec3 viewPosition;
+        
+        void main() {
+          vec4 viewPositionTemp =viewMatrix *  modelMatrix * vec4(position, 1.0);
+          viewPosition = normalize(vec3(viewPositionTemp));
+        
+          vec4 sum =  viewMatrix * vec4(spherePosition,1.0) - viewPositionTemp;
+          lightDirection = normalize(vec3(sum));
+        
+          vec4 norm =viewMatrix * modelMatrix * vec4(normal,0.0);
+          interpolatedNormal = normalize(vec3(norm));
+        
+          gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
+        }
+        
+      </script>
+      
+        <script id="blinphongFragmentShader" type="x-shader/x-fragment">
+          uniform vec3 ambientColor;
+          uniform vec3 diffuseColor;
+          uniform vec3 specularColor;
+          uniform vec3 lightColor;
+  
+          uniform float kSpecular;
+          uniform float kAmbient;
+          uniform float kDiffuse;
+          uniform float shininess;
+  
+          varying vec3 interpolatedNormal;
+          varying vec3 lightDirection;
+          varying vec3 viewPosition;
+          
+  void main() {
+  
+      float diffuse = dot(interpolatedNormal, lightDirection);
+  
+      vec3 viewPosition = normalize(vec3(0.0,0.0,0.0) - viewPosition);
+  
+      vec3 halfWayVec =  normalize(lightDirection + viewPosition);
+  
+      float sum = clamp(dot(halfWayVec,interpolatedNormal),0.0,1.0);
+      float specular =  kSpecular * pow(max(0.0, sum), shininess);
+  
+      diffuse = diffuse * kDiffuse;
+  
+      vec3 intensity = kAmbient * ambientColor + diffuse * diffuseColor + specular * specularColor ;
+  
+      gl_FragColor = vec4(intensity, 1.0);
+  
+  }
+  
+          </script> 
+    <!-- <script id="energySphereVertexShader" type="x-shader/x-vertex">
+      uniform vec3 spherePosition;
+
+      varying vec3 interpolatedNormal;
+      varying vec3 lightDirection;
+      varying vec3 vertexPosition;
+
+void main() {
+    vertexPosition = position;
+    vec4 viewPosTemp = viewMatrix * modelMatrix * vec4(position, 1.0);
+    
+    lightDirection = normalize(vec3(viewMatrix * vec4(spherePosition, 1.0) - viewPosTemp));
+    interpolatedNormal = normalize(normalMatrix * normal);
+
+    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
+}
+      
+    </script>
+    
+      <script id="energySphereFragmentShader" type="x-shader/x-fragment">
+        uniform float ticks;
+        
+        varying vec3 interpolatedNormal;
+        varying vec3 lightDirection;
+        varying vec3 vertexPosition;
+        
+        void main() {
+            float lightIntensity = clamp(dot (lightDirection,interpolatedNormal),0.0,1.0);
+
+            vec3 color1 = vec3(2.4, 0.5, 0.4);
+            vec3 color2 = vec3(0.0, 1.0, 1.0);
+            vec3 combinedColor = lightIntensity * color1 + (1.0-lightIntensity)* color2;
+
+           
+            gl_FragColor = vec4(combinedColor, 1.0);
+        }
+        </script>  -->
+
+
+
+  <!--  threejs and related libraries --> 
+
+<script src="js/three.min.js"></script> 
+<script src="js/OBJLoader.js"></script>
+<script src="js/SourceLoader.js"></script>
+<script src="js/OrbitControls.js"></script>
+<script src="js/KeyboardState.js"></script> <!-- By Jerome Etienne: http://jetienne.com/ -->
+
+  <!--  Assignment template code --> 
+
+<script src="motion.js"></script>
+<script src="scene.js"></script>
+<script src="warp.js"></script>
+<script src="luxo.js"></script>
+<script src="pencil.js"></script>
+<script src="laser.js"></script>
+<script src="energySphere1.js"></script>
+<script src="armadillo.js"></script>
+<script src="spline.js"></script>
+<script src="kfs.js"></script>
+
+<body>
+<script src="./js/GLTFLoader.js"></script>
+<script>
+let portalLoadermash;
+let stairLoadermash;
+let swirlLoadermash;
+
+function loadGLTF() { // credit: https://www.youtube.com/watch?v=ZUviQP1L9uw
+    let loader = new THREE.GLTFLoader();                // license are in their obj folder
+    loader.load('./obj/portal/portal.gltf', (gltf) => { // credit: gltf file from https://skfb.ly/6ZN7P
+      portalLoadermash = gltf.scene;
+        scene.add(portalLoadermash);
+        portalLoadermash.scale.set(10,10,10);
+        portalLoadermash.position.x = 0;
+        portalLoadermash.position.y = 0;
+        portalLoadermash.position.z = 0;
+    });
+    loader.load('./obj/stair/scene.gltf', (gltf) => { // credit: gltf file from https://sketchfab.com/3d-models/stairs-28584e2acd7d477f80b34b3f1e76f5ea
+      stairLoadermash = gltf.scene;
+        scene.add(stairLoadermash);
+        stairLoadermash.scale.set(20,20,20);
+        stairLoadermash.position.x = 32;
+        stairLoadermash.position.y = 31;
+        stairLoadermash.position.z = -15;
+    });
+    loader.load('./obj/swirl2/scene.gltf', (gltf) => { // credit: gltf file from https://skfb.ly/onEGu
+        swirlLoadermash = gltf.scene;
+        scene.add(swirlLoadermash);
+        swirlLoadermash.scale.set(0.1,0.1,0.1);
+        swirlLoadermash.position.x = -1;
+        swirlLoadermash.position.y = 12;
+        swirlLoadermash.position.z = -65;
+        swirlLoadermash.rotation.y +=  Math.PI/2;
+        
+        swirlLoadermash.rotation.x +=  Math.PI/2;
+    // while(1) {
+    //   loadermash.rotation.z +=  Math.PI/2;
+    // }
+    });
+}
+loadGLTF();
+</script>
+</body>>
+
+</body>
+</html>
+
